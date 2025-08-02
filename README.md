@@ -62,6 +62,7 @@ subgraph "VPC - Frankfurt (31.0.0.0/16)"
   Subnet2 -- associated with --> RT2
   RT2 -- routes to --> IGW2
 end
+
 ---
 ## Outcomes
 
