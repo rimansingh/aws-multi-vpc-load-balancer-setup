@@ -1,18 +1,8 @@
-Of course. You can achieve a side-by-side layout in a GitHub `README.md` file by using HTML tables. This is a great way to keep the visual architecture diagram visible while a user reads through the implementation steps.
-
-Here is the updated `README.md` code. Simply copy and paste this into your file. The diagram will appear on the left, and the detailed guide will be on the right.
-
----
-
 # AWS Global Accelerator & Multi-Region Networking
 
 This document outlines the steps to design and implement a highly available and low-latency global application architecture using AWS services. By leveraging AWS Global Accelerator, we can intelligently route user traffic to the nearest healthy regional endpoint, thereby improving uptime and performance.
 
 ---
-
-<table>
-<tr>
-<td valign="top">
 
 ### Architecture Diagram
 
@@ -73,13 +63,13 @@ graph TD
     end
 ```
 
-### Outcomes
+---
+## Outcomes
 
 *   **Improved Global Application Uptime:** By distributing traffic across multiple regions, the application remains available even if one region experiences an outage.
-*   **Reduced Latency:** User traffic is intelligently routed to the AWS edge location closest to them, resulting in lower latency and better performance.
+*   **Reduced Latency:** User traffic is intelligently routed to the AWS edge location closest to them and then over the AWS global network to the nearest healthy application endpoint, resulting in lower latency and better performance.
 
-</td>
-<td valign="top">
+---
 
 ## Step-by-Step Implementation Guide
 
@@ -87,92 +77,129 @@ Here is a detailed breakdown of the steps required to configure this architectur
 
 ### 1. VPC and Subnet Creation
 
-First, create two Virtual Private Clouds (VPCs), one in Mumbai (`ap-south-1`) and another in Frankfurt (`eu-central-1`).
+First, we will create two Virtual Private Clouds (VPCs), one in the Mumbai (`ap-south-1`) region and another in the Frankfurt (`eu-central-1`) region.
 
 **In the Mumbai (`ap-south-1`) Region:**
 
-1.  **Create VPC:**
-    *   **Name:** `VPC-Mumbai`
-    *   **CIDR block:** `21.0.0.0/16`
-2.  **Create Subnet:**
-    *   **VPC:** `VPC-Mumbai`
-    *   **Name:** `Public-Subnet-Mumbai`
-    *   **CIDR block:** `21.0.1.0/24`
-3.  **Create & Attach Internet Gateway:**
-    *   Create `IGW-Mumbai` and attach it to `VPC-Mumbai`.
-4.  **Configure Route Table:**
-    *   In the main route table for `VPC-Mumbai`, add a route:
+1.  **Create the VPC:**
+    *   Navigate to the VPC dashboard in the AWS Management Console.
+    *   Click on "Create VPC".
+    *   **Name tag:** `VPC-Mumbai`
+    *   **IPv4 CIDR block:** `21.0.0.0/16`
+    *   Leave other settings as default and create the VPC.
+2.  **Create a Subnet:**
+    *   In the VPC dashboard, go to "Subnets" and click "Create subnet".
+    *   **VPC ID:** Select `VPC-Mumbai`.
+    *   **Subnet name:** `Public-Subnet-Mumbai`
+    *   **Availability Zone:** Choose an AZ in the `ap-south-1` region.
+    *   **IPv4 CIDR block:** `21.0.1.0/24`
+3.  **Create and Attach an Internet Gateway:**
+    *   In the VPC dashboard, go to "Internet Gateways" and click "Create internet gateway".
+    *   **Name tag:** `IGW-Mumbai`
+    *   After creation, attach it to `VPC-Mumbai`.
+4.  **Configure the Route Table:**
+    *   Go to "Route Tables" and select the main route table associated with `VPC-Mumbai`.
+    *   Add a route:
         *   **Destination:** `0.0.0.0/0`
-        *   **Target:** `IGW-Mumbai`
+        *   **Target:** Select the `IGW-Mumbai` you created.
 
 **In the Frankfurt (`eu-central-1`) Region:**
 
-1.  **Create VPC:**
-    *   **Name:** `VPC-Frankfurt`
-    *   **CIDR block:** `31.0.0.0/16`
-2.  **Create Subnet:**
-    *   **VPC:** `VPC-Frankfurt`
-    *   **Name:** `Public-Subnet-Frankfurt`
-    *   **CIDR block:** `31.0.1.0/24`
-3.  **Create & Attach Internet Gateway:**
-    *   Create `IGW-Frankfurt` and attach it to `VPC-Frankfurt`.
-4.  **Configure Route Table:**
-    *   In the main route table for `VPC-Frankfurt`, add a route:
+Repeat the same steps as above, but with the following configurations:
+
+1.  **Create the VPC:**
+    *   **Name tag:** `VPC-Frankfurt`
+    *   **IPv4 CIDR block:** `31.0.0.0/16`
+2.  **Create a Subnet:**
+    *   **VPC ID:** Select `VPC-Frankfurt`.
+    *   **Subnet name:** `Public-Subnet-Frankfurt`
+    *   **Availability Zone:** Choose an AZ in the `eu-central-1` region.
+    *   **IPv4 CIDR block:** `31.0.1.0/24`
+3.  **Create and Attach an Internet Gateway:**
+    *   **Name tag:** `IGW-Frankfurt`
+    *   Attach it to `VPC-Frankfurt`.
+4.  **Configure the Route Table:**
+    *   Select the main route table for `VPC-Frankfurt`.
+    *   Add a route:
         *   **Destination:** `0.0.0.0/0`
-        *   **Target:** `IGW-Frankfurt`
+        *   **Target:** Select the `IGW-Frankfurt`.
 
 ### 2. EC2 Instance and Apache Web Server Setup
 
-Launch and configure EC2 instances in each public subnet.
+Now, launch and configure EC2 instances in each public subnet to act as web servers.
 
 **In Both Regions (Mumbai and Frankfurt):**
 
 1.  **Launch EC2 Instances:**
-    *   Choose an AMI (e.g., Amazon Linux 2).
-    *   Select the respective VPC and public subnet.
-    *   **Enable** Auto-assign Public IP.
+    *   Navigate to the EC2 dashboard.
+    *   Click "Launch instances".
+    *   Choose an Amazon Machine Image (AMI), such as Amazon Linux 2.
+    *   Select an instance type (e.g., `t2.micro` for testing).
+    *   **Network:** Select the respective VPC (`VPC-Mumbai` or `VPC-Frankfurt`).
+    *   **Subnet:** Select the public subnet (`Public-Subnet-Mumbai` or `Public-Subnet-Frankfurt`).
+    *   **Auto-assign Public IP:** Enable this.
 2.  **Configure Security Groups:**
-    *   Allow inbound traffic on port `22` (SSH) from your IP and port `80` (HTTP) from anywhere (`0.0.0.0/0`).
-3.  **Install Apache:**
-    *   SSH into each instance and run:
+    *   Create a new security group for each region with the following inbound rules:
+        *   **Type:** `SSH` | **Protocol:** `TCP` | **Port Range:** `22` | **Source:** Your IP address.
+        *   **Type:** `HTTP` | **Protocol:** `TCP` | **Port Range:** `80` | **Source:** `0.0.0.0/0`.
+3.  **Install Apache Web Server:**
+    *   Connect to your EC2 instances via SSH.
+    *   Run the following commands to install and start the Apache web server:
         ```bash
         sudo yum update -y
         sudo yum install -y httpd
         sudo systemctl start httpd
         sudo systemctl enable httpd
         ```
-    *   Create a unique `index.html` to identify the region.
+    *   Create a simple `index.html` file to identify the server's region:
+        *   **For Mumbai:** `echo "<h1>Welcome from Mumbai Region</h1>" | sudo tee /var/www/html/index.html`
+        *   **For Frankfurt:** `echo "<h1>Welcome from Frankfurt Region</h1>" | sudo tee /var/www/html/index.html`
 
-### 3. ALB and Target Group Configuration
+### 3. Application Load Balancer (ALB) and Target Group Configuration
 
-Set up an Application Load Balancer (ALB) in each region.
+Next, set up an Application Load Balancer in each region to distribute traffic to the EC2 instances.
 
 **In Both Regions (Mumbai and Frankfurt):**
 
-1.  **Create Target Group:**
+1.  **Create a Target Group:**
+    *   In the EC2 dashboard, go to "Target Groups" under "Load Balancing".
+    *   Click "Create target group".
     *   **Target type:** `Instances`
-    *   **Protocol:** `HTTP`, **Port:** `80`
-    *   Select the respective VPC.
-    *   Register the EC2 instances in that region as targets.
-2.  **Create Application Load Balancer:**
+    *   **Target group name:** `TG-Mumbai` or `TG-Frankfurt`
+    *   **Protocol:** `HTTP` | **Port:** `80`
+    *   **VPC:** Select the respective VPC.
+    *   Register your EC2 instances in that region as targets.
+2.  **Create an Application Load Balancer:**
+    *   In the EC2 dashboard, go to "Load Balancers" and click "Create Load Balancer".
+    *   **Type:** `Application Load Balancer`
+    *   **Name:** `ALB-Mumbai` or `ALB-Frankfurt`
     *   **Scheme:** `Internet-facing`
-    *   Select the respective VPC and public subnet.
-    *   Attach a security group allowing inbound HTTP traffic (port 80).
-    *   Forward traffic to the target group created above.
+    *   **VPC:** Select the respective VPC.
+    *   **Mappings:** Select the public subnet in the chosen Availability Zone.
+    *   **Security Groups:** Create a new security group that allows inbound HTTP traffic (port 80) from `0.0.0.0/0`.
+    *   **Listeners and routing:** Forward traffic to the target group you created earlier.
 
 ### 4. AWS Global Accelerator Configuration
 
-Set up Global Accelerator to direct traffic to the regional ALBs.
+Finally, set up AWS Global Accelerator to direct traffic to the regional Application Load Balancers.
 
-1.  **Create Accelerator:**
-    *   Navigate to the AWS Global Accelerator console and click "Create accelerator".
-    *   Provide a name. Global Accelerator will give you two static IP addresses.
+1.  **Create an Accelerator:**
+    *   Navigate to the AWS Global Accelerator console.
+    *   Click "Create accelerator".
+    *   **Accelerator name:** Provide a descriptive name.
+    *   Global Accelerator will provide you with two static IP addresses.
 2.  **Add a Listener:**
-    *   **Port range:** `80`, **Protocol:** `TCP`
+    *   **Port range:** `80`
+    *   **Protocol:** `TCP`
 3.  **Add Endpoint Groups:**
-    *   Create one endpoint group for each region (`ap-south-1` and `eu-central-1`).
-    *   For each endpoint group, add the respective Application Load Balancer as the endpoint.
+    *   **Endpoint group region:** `ap-south-1` (Mumbai)
+    *   **Add endpoint:**
+        *   **Endpoint type:** `Application Load Balancer`
+        *   **Endpoint:** Select the `ALB-Mumbai` you created.
+    *   Repeat this process to add another endpoint group for the Frankfurt region:
+        *   **Endpoint group region:** `eu-central-1` (Frankfurt)
+        *   **Add endpoint:**
+            *   **Endpoint type:** `Application Load Balancer`
+            *   **Endpoint:** Select the `ALB-Frankfurt`.
 
-</td>
-</tr>
-</table>
+Once the Global Accelerator is deployed, you can use its DNS name or static IP addresses to access your application. Traffic will be automatically routed to the closest healthy region, providing a seamless and performant experience for your users.
