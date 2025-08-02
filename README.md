@@ -20,56 +20,46 @@ graph TD
 
     subgraph "ap-south-1 (Mumbai) Region"
         EndpointGroup1 --> ALB1[Application Load Balancer]
-        ALB1 --> Listener1[Listener (HTTP/HTTPS)]
-        Listener1 --> TG1[Target Group]
-        TG1 --> EC2_1_1[EC2 - Web Server 1 (AZ-a)]
-        TG1 --> EC2_1_2[EC2 - Web Server 2 (AZ-b)]
+        ALB1 --> TG1[Target Group]
+        TG1 --> EC2_1_1[EC2 - Web Server 1]
+        TG1 --> EC2_1_2[EC2 - Web Server 2]
     end
 
     subgraph "eu-central-1 (Frankfurt) Region"
         EndpointGroup2 --> ALB2[Application Load Balancer]
-        ALB2 --> Listener2[Listener (HTTP/HTTPS)]
-        Listener2 --> TG2[Target Group]
-        TG2 --> EC2_2_1[EC2 - Web Server 1 (AZ-a)]
-        TG2 --> EC2_2_2[EC2 - Web Server 2 (AZ-b)]
+        ALB2 --> TG2[Target Group]
+        TG2 --> EC2_2_1[EC2 - Web Server 1]
+        TG2 --> EC2_2_2[EC2 - Web Server 2]
     end
 
     subgraph "VPC - Mumbai (21.0.0.0/16)"
         VPC1[VPC]
-        Subnet1A[Subnet-A (21.0.1.0/24 - AZ-a)]
-        Subnet1B[Subnet-B (21.0.2.0/24 - AZ-b)]
+        Subnet1[Subnet - 21.0.1.0/24]
         IGW1[Internet Gateway]
         RT1[Route Table]
 
-        VPC1 --> Subnet1A
-        VPC1 --> Subnet1B
-        EC2_1_1 --> Subnet1A
-        EC2_1_2 --> Subnet1B
-        ALB1 --> Subnet1A
-        ALB1 --> Subnet1B
-        VPC1 --> IGW1
-        Subnet1A --> RT1
-        Subnet1B --> RT1
-        RT1 --> IGW1
+        VPC1 -- contains --> Subnet1
+        EC2_1_1 -- resides in --> Subnet1
+        EC2_1_2 -- resides in --> Subnet1
+        ALB1 -- spans --> Subnet1
+        VPC1 -- attached to --> IGW1
+        Subnet1 -- associated with --> RT1
+        RT1 -- routes to --> IGW1
     end
 
     subgraph "VPC - Frankfurt (31.0.0.0/16)"
         VPC2[VPC]
-        Subnet2A[Subnet-A (31.0.1.0/24 - AZ-a)]
-        Subnet2B[Subnet-B (31.0.2.0/24 - AZ-b)]
+        Subnet2[Subnet - 31.0.1.0/24]
         IGW2[Internet Gateway]
         RT2[Route Table]
 
-        VPC2 --> Subnet2A
-        VPC2 --> Subnet2B
-        EC2_2_1 --> Subnet2A
-        EC2_2_2 --> Subnet2B
-        ALB2 --> Subnet2A
-        ALB2 --> Subnet2B
-        VPC2 --> IGW2
-        Subnet2A --> RT2
-        Subnet2B --> RT2
-        RT2 --> IGW2
+        VPC2 -- contains --> Subnet2
+        EC2_2_1 -- resides in --> Subnet2
+        EC2_2_2 -- resides in --> Subnet2
+        ALB2 -- spans --> Subnet2
+        VPC2 -- attached to --> IGW2
+        Subnet2 -- associated with --> RT2
+        RT2 -- routes to --> IGW2
     end
 ```
 
