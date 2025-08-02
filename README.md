@@ -201,5 +201,3 @@ Finally, set up AWS Global Accelerator to direct traffic to the regional Applica
         *   **Add endpoint:**
             *   **Endpoint type:** `Application Load Balancer`
             *   **Endpoint:** Select the `ALB-Frankfurt`.
-
-Once the Global Accelerator is deployed, you can use its DNS name or static IP addresses to access your application. Traffic will be automatically routed to the closest healthy region, providing a seamless and performant experience for your users.
