@@ -1,3 +1,9 @@
+# AWS Global Accelerator & Multi-Region Networking
+
+This document outlines the steps to design and implement a highly available and low-latency global application architecture using AWS services. By leveraging AWS Global Accelerator, we can intelligently route user traffic to the nearest healthy regional endpoint, thereby improving uptime and performance.
+
+---
+
 ## Architecture Diagram
 
 ```mermaid
