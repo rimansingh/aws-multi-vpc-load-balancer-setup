@@ -63,7 +63,6 @@ subgraph "VPC - Frankfurt (31.0.0.0/16)"
   RT2 -- routes to --> IGW2
 end
 ---
-
 ## Outcomes
 
 *   **Improved Global Application Uptime:** By distributing traffic across multiple regions, the application remains available even if one region experiences an outage.
